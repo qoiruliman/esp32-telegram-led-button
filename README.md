@@ -30,9 +30,7 @@ Install melalui Library Manager:
 
 * `WiFi`
 * `WiFiClientSecure`
-* `UniversalTelegramBot`
-  (oleh Brian Lough)
-
+* [`UniversalTelegramBot`](https://github.com/witnessmenow/Universal-Arduino-Telegram-Bot)  
 ### 2. **Ubah Token dan Chat ID**
 
 ```cpp
@@ -111,5 +109,3 @@ Feel free untuk fork, buat pull request, atau laporkan issue jika ada yang ingin
 Proyek ini open-source dan bisa digunakan bebas untuk pembelajaran dan eksperimen pribadi.
 
 ---
-
-Kalau kamu mau saya bantu generate file `README.md` langsung atau masukkan ke proyek GitHub, tinggal bilang ya!
