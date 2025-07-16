@@ -1,58 +1,115 @@
-# ESP32 Telegram LED Button
+# 💡 IoT Telegram Bot - Kontrol LED via Telegram (ESP32)
 
-Proyek **IoT menggunakan ESP32 dan Telegram Bot** untuk mengontrol 3 buah LED. Kontrol dapat dilakukan baik melalui **command** maupun **inline button** di Telegram, tanpa perlu mengetik perintah manual.
-
----
-
-## 🔧 Fitur Utama
-
-- 🔘 Kontrol LED via Telegram **button inline**
-- 💬 Mendukung perintah manual:  
-  `led1`, `led2`, `led3`, `all_on`, `all_off`, `running`
-- 🚦 Fitur **Running LED** (LED menyala bergantian)
-- ✅ Bisa menyalakan/mematikan LED satu per satu atau sekaligus
-- 📱 Tidak perlu ngetik perintah — cukup tekan tombol
+Proyek ini memungkinkan kamu untuk mengontrol beberapa LED menggunakan **Telegram Bot** lewat **ESP32**. Terdapat fitur tombol inline, status LED, kontrol individual, kontrol massal, dan efek **running LED** langsung dari aplikasi Telegram.
 
 ---
 
-## 💡 Daftar Perintah Telegram
+## 🔧 Fitur
 
-| Perintah      | Fungsi                      |
-|---------------|-----------------------------|
-| `led1`        | Toggle LED1                 |
-| `led2`        | Toggle LED2                 |
-| `led3`        | Toggle LED3                 |
-| `all_on`      | Nyalakan semua LED          |
-| `all_off`     | Matikan semua LED           |
-| `running`     | Jalankan LED secara bergantian |
-
-Atau cukup tekan tombol yang muncul di Telegram. Bot akan menampilkan tombol-tombol ini secara otomatis setiap kali kamu mengaksesnya.
+* ✅ Kontrol **ON/OFF LED secara individual** dengan tombol Telegram
+* ✅ Kontrol **semua LED sekaligus** (ALL ON / ALL OFF)
+* ✅ Efek **running LED**
+* ✅ Mendukung perintah custom di Telegram (`/status`, `/button`, `/led`, dll)
+* ✅ Tombol inline otomatis sesuai jumlah LED
 
 ---
 
-## 📲 Syarat Sebelum Memulai
+## ⚙️ Hardware
 
-1. Buat bot Telegram di [@BotFather](https://t.me/BotFather)
-2. Dapatkan:
-   - **Bot Token**
-   - **Chat ID** kamu
-3. Ubah variabel berikut di kode:
-   ```cpp
-   #define BOT_TOKEN "isi_token_anda"
-   #define CHAT_ID "isi_chat_id_anda"
+* Board: ESP32
+* LED: Jumlah bebas (kode menyesuaikan otomatis)
+* Koneksi: WiFi
 
+---
 
-🛠️ Kebutuhan Hardware
-- ESP32
-- 3x LED (atau gunakan internal LED jika board mendukung)
-- Kabel jumper
-- Koneksi WiFi
+## 🧾 Instalasi
 
-📦 Library yang Digunakan
-- WiFi.h
-- WiFiClientSecure
-- UniversalTelegramBot
+### 1. **Library yang dibutuhkan**
 
-🔗 Tautan Terkait
-📢 Channel WhatsApp (info & update):
-https://whatsapp.com/channel/0029Vb5e33sJuyABUxO12z0u
+Install melalui Library Manager:
+
+* `WiFi`
+* `WiFiClientSecure`
+* `UniversalTelegramBot`
+  (oleh Brian Lough)
+
+### 2. **Ubah Token dan Chat ID**
+
+```cpp
+#define BOT_TOKEN "TOKEN_BOT_TELEGRAM_KAMU"
+#define CHAT_ID "CHAT_ID_KAMU"
+```
+
+### 3. **WiFi Configuration**
+
+* Untuk **Wokwi**, tidak perlu ubah.
+* Untuk jaringan rumah:
+
+```cpp
+const char* ssid = "NAMA_WIFI";
+const char* password = "PASSWORD_WIFI";
+```
+
+---
+
+## 🕹️ Command Telegram
+
+| Perintah               | Fungsi                            |
+| ---------------------- | --------------------------------- |
+| `/status`              | Menampilkan status semua LED      |
+| `/button`              | Menampilkan tombol kontrol LED    |
+| `/led1` - `/led4`      | Menyalakan/mematikan LED tertentu |
+| Tekan tombol `ALL ON`  | Menyalakan semua LED              |
+| Tekan tombol `ALL OFF` | Mematikan semua LED               |
+| Tekan tombol `RUNNING` | Menjalankan animasi LED berjalan  |
+
+---
+
+## 📱 Contoh Tampilan Bot
+
+Telegram akan menampilkan tombol seperti:
+
+```
+[ LED1 ON ] [ LED2 ON ] ...
+[ ALL ON ] [ ALL OFF ] [ RUNNING ]
+```
+
+---
+
+## 🛠️ Customisasi LED
+
+Jumlah LED bisa ditambah atau dikurangi:
+
+```cpp
+const int LED_PINS[] = {18, 19, 21, 22};  // Ubah sesuai kebutuhan
+```
+
+---
+
+## 📌 Catatan
+
+* Untuk membuat tombol perintah muncul otomatis saat mengetik `/`, pastikan bagian `bot_setup()` tidak dikomentari.
+* Untuk menghapus semua command dari menu Telegram, gunakan versi kosong `bot_setup()`.
+
+---
+
+## 🔗 Link Terkait
+
+📢 Channel WhatsApp (Info & Update):
+[https://whatsapp.com/channel/0029Vb5e33sJuyABUxO12z0u](https://whatsapp.com/channel/0029Vb5e33sJuyABUxO12z0u)
+
+---
+
+## 🤝 Kontribusi
+
+Feel free untuk fork, buat pull request, atau laporkan issue jika ada yang ingin ditambahkan!
+
+---
+
+## 💡 Lisensi
+
+Proyek ini open-source dan bisa digunakan bebas untuk pembelajaran dan eksperimen pribadi.
+
+---
+
+Kalau kamu mau saya bantu generate file `README.md` langsung atau masukkan ke proyek GitHub, tinggal bilang ya!
