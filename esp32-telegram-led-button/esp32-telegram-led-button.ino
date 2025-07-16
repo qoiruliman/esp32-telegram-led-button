@@ -3,153 +3,203 @@
 // ada fitur button
 // bisa on off in led 1 1 / sekaligus
 // ada running led 
-// bisa pake button gak harus kirim all_on / yg lain
+// bisa pake button
+// ada my commad 
 // https://whatsapp.com/channel/0029Vb5e33sJuyABUxO12z0u
 
 #include <WiFi.h>
 #include <WiFiClientSecure.h>
 #include <UniversalTelegramBot.h>
 
-// ganti sesuai wifi mu kecuali pake wokwi
+// kalau pake wokwi gak usah di ubah ssid sama pw nya tapi kalau pake wifi rumah ubah lah
 const char* ssid = "Wokwi-GUEST";
 const char* password = "";
 
-// ganti sesuai bot token mu jangan bilang belum punya 
-#define BOT_TOKEN "ini bot token tele "
-#define CHAT_ID "ini chat id"
+// ini buat token sama chat id
+#define BOT_TOKEN "ini token bot tele "
+#define CHAT_ID "ini chat id tele mu masa harus di kasih tau"
 
-// kalau mau ganti pin ganti aja
-const int LED1 = 18;
-const int LED2 = 19;
-const int LED3 = 21;
-
-bool led1Status = false;
-bool led2Status = false;
-bool led3Status = false;
-
+// ini pin led nya kalau mau kurai atau tambha bebas kode udah menyesuaikan sendiri
+const int LED_PINS[] = {18, 19, 21, 22};
+const int LED_COUNT = sizeof(LED_PINS) / sizeof(LED_PINS[0]);
+bool ledStatus[LED_COUNT] = {false}; 
 
 WiFiClientSecure client;
 UniversalTelegramBot bot(BOT_TOKEN, client);
+unsigned long lastCheck = 0;
 
 void setupLEDs() {
-  pinMode(LED1, OUTPUT);
-  pinMode(LED2, OUTPUT);
-  pinMode(LED3, OUTPUT);
-  digitalWrite(LED1, led1Status ? HIGH : LOW);
-  digitalWrite(LED2, led2Status ? HIGH : LOW);
-  digitalWrite(LED3, led3Status ? HIGH : LOW);
+  for (int i = 0; i < LED_COUNT; i++) {
+    pinMode(LED_PINS[i], OUTPUT);
+    digitalWrite(LED_PINS[i], LOW);
+  }
 }
 
 void updateLEDs() {
-  digitalWrite(LED1, led1Status ? HIGH : LOW);
-  digitalWrite(LED2, led2Status ? HIGH : LOW);
-  digitalWrite(LED3, led3Status ? HIGH : LOW);
-}
-
-String button() {
-  String keyboard = "[";
-  keyboard += "[{\"text\":\"LED1 " + String(led1Status ? "OFF" : "ON") + "\",\"callback_data\":\"LED1\"},";
-  keyboard += "{\"text\":\"LED2 " + String(led2Status ? "OFF" : "ON") + "\",\"callback_data\":\"LED2\"},";
-  keyboard += "{\"text\":\"LED3 " + String(led3Status ? "OFF" : "ON") + "\",\"callback_data\":\"LED3\"}],";
-  keyboard += "[{\"text\":\"ALL ON\",\"callback_data\":\"ALL_ON\"},";
-  keyboard += "{\"text\":\"ALL OFF\",\"callback_data\":\"ALL_OFF\"},";
-  keyboard += "{\"text\":\"RUNNING LED\",\"callback_data\":\"RUNNING\"}]";
-  keyboard += "]";
-  return keyboard;
-}
-
-void sendMessageWithButton(String chat_id, String text) {
-  String keyboardJson = button();
-  bot.sendMessageWithInlineKeyboard(chat_id, text, "Markdown", keyboardJson);
-}
-
-void toggleLED(int ledNum) {
-  switch (ledNum) {
-    case 1: led1Status = !led1Status; break;
-    case 2: led2Status = !led2Status; break;
-    case 3: led3Status = !led3Status; break;
+  for (int i = 0; i < LED_COUNT; i++) {
+    digitalWrite(LED_PINS[i], ledStatus[i] ? HIGH : LOW);
   }
-  updateLEDs();
+}
+
+void toggleLED(int index) {
+  if (index >= 0 && index < LED_COUNT) {
+    ledStatus[index] = !ledStatus[index];
+    updateLEDs();
+  }
 }
 
 void setAllLEDs(bool state) {
-  led1Status = state;
-  led2Status = state;
-  led3Status = state;
+  for (int i = 0; i < LED_COUNT; i++) {
+    ledStatus[i] = state;
+  }
   updateLEDs();
 }
 
 void runningLED() {
-  const int leds[] = {LED1, LED2, LED3};
-  const int delayMs = 300;
-
   for (int i = 0; i < 10; i++) {
-    for (int j = 0; j < 3; j++) {
-      digitalWrite(LED1, LOW);
-      digitalWrite(LED2, LOW);
-      digitalWrite(LED3, LOW);
-      digitalWrite(leds[j], HIGH);
-      delay(delayMs);
+    for (int j = 0; j < LED_COUNT; j++) {
+      for (int k = 0; k < LED_COUNT; k++) {
+        digitalWrite(LED_PINS[k], LOW);
+      }
+      digitalWrite(LED_PINS[j], HIGH);
+      delay(300);
     }
   }
-
-  led1Status = true;
-  led2Status = false;
-  led3Status = false;
-  updateLEDs();
+  setAllLEDs(false);
 }
 
-void handleCallbackQuery(String callbackData, String chat_id) {
-  if (callbackData == "LED1") {
-    toggleLED(1);
-  } else if (callbackData == "LED2") {
-    toggleLED(2);
-  } else if (callbackData == "LED3") {
-    toggleLED(3);
+String buildKeyboard() {
+  String keyboard = "[[";
+
+  for (int i = 0; i < LED_COUNT; i++) {
+    if (i > 0) keyboard += ",";
+    keyboard += "{\"text\":\"LED" + String(i + 1);
+    keyboard += (ledStatus[i] ? " OFF" : " ON");
+    keyboard += "\",\"callback_data\":\"LED" + String(i + 1) + "\"}";
+  }
+
+  keyboard += "],[{\"text\":\"ALL ON\",\"callback_data\":\"ALL_ON\"},";
+  keyboard += "{\"text\":\"ALL OFF\",\"callback_data\":\"ALL_OFF\"},";
+  keyboard += "{\"text\":\"RUNNING\",\"callback_data\":\"RUNNING\"}]]";
+
+  return keyboard;
+}
+
+void sendMessageWithButton(String chat_id, String text, int message_id) {
+  String keyboard = buildKeyboard();
+  bot.sendMessageWithInlineKeyboard(chat_id, text, "Markdown", keyboard, message_id);
+}
+
+void handleCallbackQuery(String callbackData, String chat_id, int message_id) {
+  if (callbackData.startsWith("LED")) {
+    int ledIndex = callbackData.substring(3).toInt() - 1;
+    toggleLED(ledIndex);
   } else if (callbackData == "ALL_ON") {
     setAllLEDs(true);
   } else if (callbackData == "ALL_OFF") {
     setAllLEDs(false);
   } else if (callbackData == "RUNNING") {
-    bot.sendMessage(chat_id, "Running dimulai");
+    bot.sendMessage(chat_id, "Running LED dimulai...");
     runningLED();
   }
 
-  sendMessageWithButton(chat_id, "Status LED terbaru:");
+  sendMessageWithButton(chat_id, "Silakan kontrol LED di bawah ini:", message_id);
 }
+
+void handleCommand(String text, String chat_id) {
+  if (text == "/status") {
+    String statusMsg = "Status LED:\n";
+    for (int i = 0; i < LED_COUNT; i++) {
+      statusMsg += "LED " + String(i + 1) + ": ";
+      statusMsg += (ledStatus[i] ? "ON" : "OFF");
+      statusMsg += "\n";
+    }
+    bot.sendMessage(chat_id, statusMsg);
+  } 
+  else if (text == "/button") {
+    String keyboard = buildKeyboard();
+    bot.sendMessageWithInlineKeyboard(chat_id, "Kontrol LED:", "Markdown", keyboard);
+  } 
+  else if (text.startsWith("/led")) {
+  int ledIndex = text.substring(4).toInt() - 1;
+  
+  if (ledIndex >= 0 && ledIndex < LED_COUNT) {
+    String msg = "LED " + String(ledIndex + 1) + " led ";
+    msg += (ledStatus[ledIndex] ? "di matikan" : "di hidupkan");
+    bot.sendMessage(chat_id, msg, "Markdown");
+    toggleLED(ledIndex);
+  }
+  }
+}
+
+// untuk buat MyCommands kalau pas di tele ngetik slash (/) muncul perintah  
+// atau ada garis tiga tulisan menu
+// kalau gak mau komen aja jangan lupa komen yg di void setup
+
+void bot_setup() {
+  String commands = "[";
+  commands += "{\"command\":\"status\", \"description\":\"Lihat status LED\"},";
+  commands += "{\"command\":\"button\", \"description\":\"Tampilkan tombol kontrol\"},";
+  commands += "{\"command\":\"led\",    \"description\":\"Loop semua LED\"},";
+
+  for (int i = 0; i < LED_COUNT; i++) {
+    commands += "{\"command\":\"led" + String(i + 1) + "\", ";
+    commands += "\"description\":\"Toggle LED " + String(i + 1) + "\"}";
+    if (i < LED_COUNT - 1) commands += ",";
+  }
+  commands += "]";
+  bot.setMyCommands(commands);
+}
+
+
+// untuk hapus MyCommands kalau pas di tele ngetik slash (/) muncul perintah  
+// atau ada garis tiga tulisan menu
+// kalau udah terlanjur bikin dan mau hilain buka komen dibawah
+
+
+// void bot_setup() {
+//   const String emptyCommands = "[]"; // kosongkan daftar command
+//   bot.setMyCommands(emptyCommands);
+// }
+
 
 void setup() {
   Serial.begin(115200);
-
   setupLEDs();
+
   WiFi.begin(ssid, password);
-  Serial.print("Connecting to WiFi...");
+  Serial.print("Menghubungkan ke WiFi");
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
     Serial.print(".");
   }
-  Serial.println("Connected!");
+  Serial.println("\nTerhubung ke WiFi!");
+
   client.setInsecure();
-  sendMessageWithButton(CHAT_ID, "Kontrol LED siap digunakan!");
+
+// kalau yang di atas di komen atau hapus ini juga jangan lupa
+  bot_setup(); 
 }
-
 void loop() {
-  int numNewMessages = bot.getUpdates(bot.last_message_received + 1);
-
-  for (int i = 0; i < numNewMessages; i++) {
-    String chat_id = String(bot.messages[i].chat_id);
-    if (bot.messages[i].type == "callback_query") {
-      String callbackData = bot.messages[i].text;
-      String fromName = bot.messages[i].from_name;
-
-      Serial.println("Pesan dari " + fromName + ":" + callbackData);
-      handleCallbackQuery(callbackData, chat_id);
+  if (millis() - lastCheck > 1000) {
+    int numNewMessages = bot.getUpdates(bot.last_message_received + 1);
+    for (int i = 0; i < numNewMessages; i++) {
+      if (bot.messages[i].type == "callback_query") {
+        String callbackData = bot.messages[i].text;
+        String chat_id = bot.messages[i].chat_id;
+        int message_id = bot.messages[i].message_id;
+        handleCallbackQuery(callbackData, chat_id, message_id);
+      } else {
+        String text = bot.messages[i].text;
+        String chat_id = bot.messages[i].chat_id;
+        handleCommand(text, chat_id);
+      }
     }
-  }
 
-  if (numNewMessages > 0) {
-    bot.last_message_received = bot.messages[numNewMessages - 1].update_id;
-  }
+    if (numNewMessages > 0) {
+      bot.last_message_received = bot.messages[numNewMessages - 1].update_id;
+    }
 
-  delay(50);
+    lastCheck = millis();
+  }
 }
